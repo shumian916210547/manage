@@ -5,3 +5,12 @@ body {
   padding: 0;
   width: 100%;
 }
+
+.el-main {
+  text-align: start !important;
+}
+
+.el-table td:nth-child(1) {
+  box-sizing: border-box;
+  text-align: center;
+}

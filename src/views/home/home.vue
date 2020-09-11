@@ -142,12 +142,16 @@
 	}
 
 	.el-aside {
+		user-select: none;
 		background-color: rgb(50, 55, 68);
 		color: #333;
 		text-align: center;
 	}
 	.el-menu {
 		border-right: 0;
+	}
+	.el-menu-item {
+		text-align: end;
 	}
 
 	.el-main {
