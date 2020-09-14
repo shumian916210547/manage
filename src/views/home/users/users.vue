@@ -14,6 +14,7 @@
               v-model="query"
               class="input-with-select"
               @clear="getUsersList(query, pagenum, pagesize)"
+              @keydown.enter.native="getUsersList(query, pagenum, pagesize)"
               clearable
             >
               <el-button
