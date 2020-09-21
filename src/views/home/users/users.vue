@@ -25,13 +25,45 @@
             </el-input>
           </el-col>
           <el-col :span="4">
-            <el-button type="primary">添加用户</el-button>
+            <el-button type="primary" @click="dialogVisible = true">添加用户</el-button>
+            <el-dialog
+              title="添加用户"
+              :visible.sync="dialogVisible"
+              width="30%"
+              :before-close="handleClose"
+              @close="formClose"
+            >
+              <el-form
+                :label-position="labelPosition"
+                label-width="80px"
+                :model="addform"
+                :rules="rules"
+                ref="addformmsg"
+              >
+                <el-form-item label="用户名" prop="username">
+                  <el-input v-model="addform.username"></el-input>
+                </el-form-item>
+                <el-form-item label="密码" prop="password">
+                  <el-input v-model="addform.password" type="password" auto-complete="new-password"></el-input>
+                </el-form-item>
+                <el-form-item label="邮箱" prop="email">
+                  <el-input v-model="addform.email"></el-input>
+                </el-form-item>
+                <el-form-item label="手机号" prop="tel">
+                  <el-input v-model="addform.tel"></el-input>
+                </el-form-item>
+              </el-form>
+              <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false">取 消</el-button>
+                <el-button type="primary" @click="adduser">确 定</el-button>
+              </span>
+            </el-dialog>
           </el-col>
         </el-row>
       </div>
       <el-table :data="users" style="width: 100%" border stripe>
         <el-table-column type="index" style="text-align:center"></el-table-column>
-        <el-table-column label="姓名" width="180" prop="username"></el-table-column>
+        <el-table-column label="用户名" width="180" prop="username"></el-table-column>
         <el-table-column label="邮箱" prop="email"></el-table-column>
         <el-table-column label="角色" prop="role_name"></el-table-column>
         <el-table-column label="状态">
@@ -41,7 +73,41 @@
         </el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
-            <el-button type="primary" icon="el-icon-edit" circle></el-button>
+            <el-button
+              type="primary"
+              icon="el-icon-edit"
+              @click="showAlterUser(scope.row.id)"
+              circle
+            ></el-button>
+            <el-dialog
+              title="修改用户信息"
+              :visible.sync="alterdialogVisible"
+              width="30%"
+              :before-close="handleClose"
+              @close="alterformClose"
+            >
+              <el-form
+                :label-position="labelPosition"
+                ref="alterform"
+                label-width="80px"
+                :model="alterform"
+                :rules="alterUserRules"
+              >
+                <el-form-item label="用户名" prop="username">
+                  <el-input v-model="alterform.username" :disabled="true"></el-input>
+                </el-form-item>
+                <el-form-item label="邮箱" prop="email">
+                  <el-input v-model="alterform.email"></el-input>
+                </el-form-item>
+                <el-form-item label="手机号" prop="tel">
+                  <el-input v-model="alterform.tel"></el-input>
+                </el-form-item>
+              </el-form>
+              <span slot="footer" class="dialog-footer">
+                <el-button @click="alterdialogVisible = false">取 消</el-button>
+                <el-button type="primary" @click="alterconfirm">确 定</el-button>
+              </span>
+            </el-dialog>
             <el-button type="danger" icon="el-icon-delete" circle></el-button>
             <el-tooltip content="设置" placement="top-end" :enterable="false">
               <el-button type="info" icon="el-icon-setting" circle></el-button>
@@ -65,19 +131,130 @@
 </template>
 
 <script>
-import { getUsers } from "network/home/users/users";
+import {
+  getUsers,
+  addUsers,
+  queryUserinfo,
+  alterUserinfo,
+} from "network/home/users/users";
 
 export default {
   name: "users",
   components: {},
   props: {},
   data() {
+    var checkEmail = (rule, value, callback) => {
+      const regEmail = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(\.[a-zA-Z0-9_-])+/;
+      if (regEmail.test(value)) {
+        return callback();
+      } else {
+        callback(new Error("请输入合法的邮箱"));
+      }
+    };
+    var checkTel = (rule, value, callback) => {
+      const regTel = /^((1[3,5,8,7,9][0-9])|(14[5,7])|(17[0,6,7,8])|(19[7]))\d{8}$/;
+      if (regTel.test(value)) {
+        return callback();
+      } else {
+        callback(new Error("请输入合法的手机号"));
+      }
+    };
     return {
       users: [],
-      total: "",
+      total: 0,
       query: "",
       pagenum: 1,
       pagesize: 5,
+      dialogVisible: false,
+      labelPosition: "right",
+      alterdialogVisible: false,
+      userid: "",
+      addform: {
+        username: "",
+        password: "",
+        email: "",
+        tel: "",
+      },
+      alterform: {
+        username: "",
+        email: "",
+        tel: "",
+      },
+      rules: {
+        username: [
+          { required: true, message: "请输入用户名", trigger: "blur" },
+          {
+            min: 3,
+            max: 10,
+            message: "用户名长度在 3 - 10 字符",
+            trigger: ["blur", "change"],
+          },
+        ],
+        password: [
+          { required: true, message: "请输入密码", trigger: "blur" },
+          {
+            min: 6,
+            max: 12,
+            message: "密码长度在 6 - 12 位",
+            trigger: ["blur", "change"],
+          },
+        ],
+        email: [
+          {
+            required: true,
+            message: "请输入邮箱",
+            trigger: "blur",
+          },
+          {
+            validator: checkEmail,
+            trigger: "blur",
+          },
+        ],
+        tel: [
+          {
+            required: true,
+            message: "请输入手机号",
+            trigger: "blur",
+          },
+          {
+            validator: checkTel,
+            trigger: "blur",
+          },
+        ],
+      },
+      alterUserRules: {
+        username: [
+          { required: true, message: "请输入用户名", trigger: "blur" },
+          {
+            min: 3,
+            max: 10,
+            message: "用户名长度在 3 - 10 字符",
+            trigger: ["blur", "change"],
+          },
+        ],
+        email: [
+          {
+            required: true,
+            message: "请输入邮箱",
+            trigger: "blur",
+          },
+          {
+            validator: checkEmail,
+            trigger: "blur",
+          },
+        ],
+        tel: [
+          {
+            required: true,
+            message: "请输入手机号",
+            trigger: "blur",
+          },
+          {
+            validator: checkTel,
+            trigger: "blur",
+          },
+        ],
+      },
     };
   },
   watch: {},
@@ -98,6 +275,93 @@ export default {
     handleCurrentChange(newcurrentsize) {
       this.pagenum = newcurrentsize;
       this.getUsersList(this.query, this.pagenum, this.pagesize);
+    },
+    handleClose(done) {
+      this.$confirm("确认关闭？")
+        .then((_) => {
+          done();
+        })
+        .catch((_) => {});
+    },
+    formClose() {
+      this.$refs.addformmsg.resetFields();
+    },
+    alterformClose() {
+      this.$refs.alterform.resetFields();
+    },
+    adduser() {
+      /* this.dialogVisible = fasle; */
+      this.$refs.addformmsg.validate((verify) => {
+        if (verify == false) {
+          this.$message({
+            type: "error",
+            message: "添加失败",
+          });
+        } else {
+          addUsers(
+            this.addform.username,
+            this.addform.password,
+            this.addform.email,
+            this.addform.tel
+          ).then((res) => {
+            if (res.data.meta.status == 201) {
+              this.dialogVisible = false;
+              this.$message({
+                type: "success",
+                message: "添加成功",
+              });
+            } else {
+              this.$message({
+                type: "error",
+                message: "添加失败",
+              });
+            }
+            console.log(res);
+          });
+        }
+      });
+    },
+    showAlterUser(userid) {
+      this.userid = userid;
+      this.alterdialogVisible = true;
+      queryUserinfo(userid).then((res) => {
+        this.alterform.username = res.data.data.username;
+        this.alterform.email = res.data.data.email;
+        this.alterform.tel = res.data.data.mobile;
+        console.log(res);
+      });
+    },
+    alterconfirm() {
+      console.log(this.userid);
+      /* this.alterdialogVisible = false; */
+      this.$refs.alterform.validate((verify) => {
+        if (verify == false) {
+          this.$message({
+            type: "error",
+            message: "修改失败",
+          });
+        } else {
+          alterUserinfo(
+            this.userid,
+            this.alterform.email,
+            this.alterform.tel
+          ).then((res) => {
+            if (res.data.meta.status == 200) {
+              this.alterdialogVisible = false;
+              this.getUsersList(this.query, this.pagenum, this.pagesize);
+              this.$message({
+                type: "success",
+                message: "修改成功",
+              });
+            } else {
+              this.$message({
+                type: "error",
+                message: "修改失败",
+              });
+            }
+          });
+        }
+      });
     },
   },
   created() {
@@ -122,5 +386,10 @@ export default {
 }
 .el-table {
   margin-top: 15px;
+}
+.el-button.is-circle {
+  border-radius: 50%;
+  padding: 12px;
+  margin-left: 10px;
 }
 </style>

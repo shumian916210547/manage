@@ -97,7 +97,6 @@ export default {
     MenuList() {
       getMenulist().then((res) => {
         this.menulist = res.data.data;
-        console.log(this.menulist);
       });
     },
   },
