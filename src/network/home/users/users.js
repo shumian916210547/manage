@@ -42,3 +42,34 @@ export function alterUserinfo(id, email, mobile) {
     },
   });
 }
+
+export function changeUserstate(uId, type) {
+  return request({
+    method: "put",
+    url: "users/" + uId + "/state/" + type,
+  });
+}
+
+export function deleteUser(id) {
+  return request({
+    method: "delete",
+    url: "users/" + id,
+  });
+}
+
+export function getRoles() {
+  return request({
+    method: "get",
+    url: "roles",
+  });
+}
+
+export function newRoles(id, rid) {
+  return request({
+    method: "put",
+    url: "users/" + id + "/role",
+    data: {
+      rid,
+    },
+  });
+}
