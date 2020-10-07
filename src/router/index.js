@@ -9,6 +9,7 @@ const users = () => import("views/home/users/users");
 const Permission = () => import("views/home/SuperSuPro/Permission");
 const roles = () => import("views/home/SuperSuPro/roles");
 const goods = () => import("views/home/goods/goods");
+const add = () => import("views/home/goods/add");
 const params = () => import("views/home/goods/params");
 const categories = () => import("views/home/goods/categories");
 
@@ -57,6 +58,11 @@ const routes = [
         path: "/categories",
         name: "categories",
         component: categories,
+      },
+      {
+        path: "/goods/add",
+        component: add,
+        name: "add",
       },
     ],
   },
